@@ -147,6 +147,8 @@ val int : int t
 val bit_string_cs    : Cstruct.t  t
 val bit_string_flags : (int * 'a) list -> 'a list t
 
+val enumerated : (int * 'a) list -> 'a t
+
 type encoding
 val ber : encoding
 val der : encoding

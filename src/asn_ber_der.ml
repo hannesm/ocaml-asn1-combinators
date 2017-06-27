@@ -252,6 +252,7 @@ module R = struct
     | Octets     -> string_like (module Asn_prim.Octets)
     | Null       -> primitive_n 0 @@ fun _ -> ()
     | OID        -> primitive Asn_prim.OID.of_cstruct
+    | Enumerated -> primitive Asn_prim.Integer.of_cstruct
     | CharString -> string_like (module Asn_prim.Gen_string)
 
 
@@ -565,6 +566,7 @@ module W = struct
     | Octets     -> encode_s a (module Asn_prim.Octets)
     | Null       -> encode Wr.empty
     | OID        -> encode @@ Asn_prim.OID.to_writer a
+    | Enumerated -> encode @@ Asn_prim.Integer.to_writer a
     | CharString -> encode @@ Asn_prim.Gen_string.to_writer a
 
 

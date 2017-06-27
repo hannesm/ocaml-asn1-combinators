@@ -94,6 +94,7 @@ and _ prim =
   | Octets     : Octets.t     prim
   | Null       : unit         prim
   | OID        : OID.t        prim
+  | Enumerated : Integer.t    prim
   | CharString : Gen_string.t prim
 
 
@@ -108,6 +109,7 @@ let tag_of_p : type a. a prim -> tag =
   | Octets     -> Universal 0x04
   | Null       -> Universal 0x05
   | OID        -> Universal 0x06
+  | Enumerated -> Universal 0x0a
   | CharString -> Universal 0x1d
 
 
