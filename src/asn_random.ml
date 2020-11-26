@@ -50,7 +50,7 @@ and r_asn : type a. a asn -> a = function
   | Choice (asn1, asn2) ->
       if Random.bool () then L (r_asn asn1) else R (r_asn asn2)
 
-  | Implicit (_, asn) -> r_asn asn
-  | Explicit (_, asn) -> r_asn asn
+  | Implicit (_, _, asn) -> r_asn asn
+  | Explicit (_, _, asn) -> r_asn asn
 
   | Prim p -> r_prim p

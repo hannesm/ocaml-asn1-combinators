@@ -54,3 +54,5 @@ let decode (Codec (dec, _)) b =
   try Ok (dec b) with Core.Parse_error err -> Error err
 
 let random = Asn_random.r_asn
+
+let to_grammar = Core.to_grammar

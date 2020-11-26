@@ -119,7 +119,7 @@ module S : sig
   type cls = [ `Universal | `Application | `Private ]
   (** ASN.1 tag CLASS. *)
 
-  val implicit : ?cls:cls -> int -> 'a t -> 'a t
+  val implicit : ?cls:cls -> int -> ?label:string -> 'a t -> 'a t
   (** [implicit ?cls n asn] is the ASN.1 [IMPLICIT] construct, changing the tag
       of [asn] to [(cls, n)].
 
@@ -132,7 +132,7 @@ module S : sig
       X.608 (see [31.2.7]) in case of a bare tag, and with the common practice
       in case of a tag marked as [IMPLICIT]. *)
 
-  val explicit : ?cls:cls -> int -> 'a t -> 'a t
+  val explicit : ?cls:cls -> int -> ?label:string -> 'a t -> 'a t
   (** [explicit ?cls n asn] is the ASN.1 [EXPLICIT] construct, changing the tag
       of [asn] to [(cls, n)].
 
@@ -400,3 +400,5 @@ val decode : 'a codec -> Cstruct.t -> ('a * Cstruct.t, error) result
 
 val random : 'a t -> 'a
 (** [random asn] is a random inhabitant of ['a]. *)
+
+val to_grammar : Format.formatter -> 'a t -> unit

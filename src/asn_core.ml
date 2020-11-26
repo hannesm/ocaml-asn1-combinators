@@ -109,8 +109,8 @@ type _ asn =
   | Set_of      : 'a asn -> 'a list asn
   | Choice      : 'a asn * 'b asn -> ('a, 'b) sum asn
 
-  | Implicit : tag * 'a asn -> 'a asn
-  | Explicit : tag * 'a asn -> 'a asn
+  | Implicit : tag * string option * 'a asn -> 'a asn
+  | Explicit : tag * string option * 'a asn -> 'a asn
 
   | Prim : 'a prim -> 'a asn
 
@@ -162,8 +162,8 @@ let rec tag_set : type a. a asn -> tags = function
   | Set_of _      -> [ set_tag ]
   | Choice (asn1, asn2) -> tag_set asn1 @ tag_set asn2
 
-  | Implicit (t, _) -> [ t ]
-  | Explicit (t, _) -> [ t ]
+  | Implicit (t, _, _) -> [ t ]
+  | Explicit (t, _, _) -> [ t ]
 
   | Prim p -> [ tag_of_p p ]
 
@@ -176,8 +176,8 @@ let rec tag : type a. a -> a asn -> tag = fun a -> function
   | Set _              -> set_tag
   | Set_of _           -> set_tag
   | Choice (a1, a2)    -> (match a with L a' -> tag a' a1 | R b' -> tag b' a2)
-  | Implicit (t, _)    -> t
-  | Explicit (t, _)    -> t
+  | Implicit (t, _, _) -> t
+  | Explicit (t, _, _) -> t
   | Prim p             -> tag_of_p p
 
 
@@ -222,8 +222,8 @@ let validate asn =
     | Choice (a1, a2) ->
         disjoint [tag_set a1; tag_set a2] ; check fs a1 ; check fs a2
 
-    | Implicit (t, a) -> check ~tag:t fs a
-    | Explicit (_, a) -> check fs a
+    | Implicit (t, _, a) -> check ~tag:t fs a
+    | Explicit (_, _, a) -> check fs a
     | Prim _          -> ()
 
   and check_s : type a. FSet.t -> a sequence -> unit = fun fs -> function
@@ -255,3 +255,93 @@ let validate asn =
     go List.(sort Tag.compare @@ concat tss) in
 
   check FSet.empty asn
+
+let tag_to_int = function
+  | Tag.Universal a -> a
+  | Tag.Application a -> a
+  | Tag.Context_specific a -> a
+  | Tag.Private a -> a
+
+let named_tag = function
+  | 12 -> Some "UTF8String"
+  | 23 -> Some "UTCTime"
+  | _ -> None
+
+let to_grammar ppf grammar =
+  let rec asn : type a. ?choice:bool -> a asn -> unit = fun ?(choice = false) ->
+    function
+    | Iso (_, _, _, a) -> asn ~choice a
+    | Fix (_, _) -> assert false
+    | Sequence s ->
+      Format.pp_print_string ppf "SEQUENCE {";
+      Format.pp_print_cut ppf ();
+      Format.pp_print_string ppf "  ";
+      Format.pp_open_vbox ppf 0;
+      seq s;
+      Format.pp_close_box ppf ();
+      Format.pp_print_cut ppf ();
+      Format.pp_print_string ppf "}";
+    | Sequence_of s ->
+      Format.pp_print_string ppf "SEQUENCE OF "; asn s
+    | Set s ->
+      Format.pp_print_string ppf "SET {";
+      Format.pp_print_cut ppf ();
+      Format.pp_print_string ppf "  ";
+      Format.pp_open_vbox ppf 0;
+      seq s ;
+      Format.pp_close_box ppf ();
+      Format.pp_print_cut ppf ();
+      Format.pp_print_string ppf "}";
+    | Set_of s ->
+      Format.pp_print_string ppf "SET OF "; asn s
+    | Choice (a, b) ->
+      if not choice then begin
+        Format.pp_print_string ppf "CHOICE {";
+        Format.pp_print_cut ppf ();
+        Format.pp_print_string ppf "  ";
+        Format.pp_open_vbox ppf 0;
+      end;
+      asn ~choice:true a; Format.pp_print_cut ppf ();
+      asn ~choice:true b;
+      if not choice then begin
+        Format.pp_close_box ppf ();
+        Format.pp_print_cut ppf ();
+        Format.pp_print_string ppf "}";
+      end
+    | Implicit (tag, lbl, a) ->
+      Format.pp_print_string ppf (match lbl with None -> "" | Some x -> x ^ " ");
+      let tagi = tag_to_int tag in
+      begin match named_tag tagi with
+        | None -> Format.pp_print_string ppf ("[" ^ string_of_int tagi ^ "] IMPLICIT "); asn a
+        | Some n -> Format.pp_print_string ppf n
+      end
+    | Explicit (tag, lbl, a) ->
+      Format.pp_print_string ppf (match lbl with None -> "" | Some x -> x ^ " ");
+      let tagi = tag_to_int tag in
+      begin match named_tag tagi with
+        | None -> Format.pp_print_string ppf ("[" ^ string_of_int tagi ^ "] "); asn a
+        | Some n -> Format.pp_print_string ppf n
+      end
+    | Prim p -> prim p
+  and ele : type a. a element -> unit = function
+    | Required (lbl, a) ->
+      Format.pp_print_string ppf (match lbl with None -> assert false | Some x -> x ^ " "); asn a
+    | Optional (lbl, a) ->
+      Format.pp_print_string ppf (match lbl with None -> assert false | Some x -> x ^ " ");
+      asn a;
+      Format.pp_print_string ppf " OPTIONAL"
+  and seq : type a. a sequence -> unit = function
+    | Last e -> ele e
+    | Pair (e, r) -> ele e; Format.pp_print_cut ppf (); seq r
+  and prim : type a. a prim -> unit = function
+    | Bool -> Format.pp_print_string ppf "BOOLEAN"
+    | Int -> Format.pp_print_string ppf "INTEGER"
+    | Bits -> Format.pp_print_string ppf "BIT STRING"
+    | Octets -> Format.pp_print_string ppf "OCTET STRING"
+    | Null -> Format.pp_print_string ppf "NULL"
+    | OID -> Format.pp_print_string ppf "OBJECT IDENTIFIER"
+    | CharString -> Format.pp_print_string ppf "CHARSTRING"
+  in
+  Format.pp_open_vbox ppf 0;
+  asn grammar;
+  Format.pp_close_box ppf ()

@@ -27,13 +27,13 @@ let to_tag id = function
   | Some `Universal   -> Tag.Universal id
   | None              -> Tag.Context_specific id
 
-let explicit ?cls id asn = Explicit (to_tag id cls, asn)
-let rec implicit : type a. ?cls:cls -> int -> a asn -> a asn =
-  fun ?cls id -> function
-    Fix (f, _) as asn -> implicit ?cls id (f asn)
-  | Iso (f, g, r, asn) -> Iso (f, g, r, implicit ?cls id asn)
-  | Choice (_, _) as asn -> explicit ?cls id asn
-  | asn -> Implicit (to_tag id cls, asn)
+let explicit ?cls id ?label asn = Explicit (to_tag id cls, label, asn)
+let rec implicit : type a. ?cls:cls -> int -> ?label:string -> a asn -> a asn =
+  fun ?cls id ?label -> function
+    Fix (f, _) as asn -> implicit ?cls id ?label (f asn)
+  | Iso (f, g, r, asn) -> Iso (f, g, r, implicit ?cls id ?label asn)
+  | Choice (_, _) as asn -> explicit ?cls id ?label asn
+  | asn -> Implicit (to_tag id cls, label, asn)
 
 let bool                = Prim Bool
 and integer             = Prim Int

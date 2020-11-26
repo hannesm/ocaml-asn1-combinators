@@ -208,8 +208,8 @@ module R = struct
       | Sequence_of a    -> constructed (t @? seq_tag) (List.map (c_asn a ~opt))
       | Set s            -> constructed (t @? set_tag) (c_set s ~opt)
       | Set_of a         -> constructed (t @? set_tag) (List.map (c_asn a ~opt))
-      | Implicit (t0, a) -> go ~t:(t @? t0) a
-      | Explicit (t0, a) -> constructed (t @? t0) (c_explicit a ~opt)
+      | Implicit (t0, _, a) -> go ~t:(t @? t0) a
+      | Explicit (t0, _, a) -> constructed (t @? t0) (c_explicit a ~opt)
       | Choice (a1, a2)  ->
           let (p1, p2) = (c_asn a1 ~opt, c_asn a2 ~opt)
           and accepts1 = peek a1 in
@@ -426,10 +426,10 @@ module W = struct
         | L a' -> encode conf tag a' asn1
         | R b' -> encode conf tag b' asn2 )
 
-    | Implicit (t, asn) ->
+    | Implicit (t, _, asn) ->
         encode conf (Some (tag @? t)) a asn
 
-    | Explicit (t, asn) ->
+    | Explicit (t, _, asn) ->
         e_constructed (tag @? t) (encode conf None a asn)
 
     | Prim p -> e_prim tag a p
