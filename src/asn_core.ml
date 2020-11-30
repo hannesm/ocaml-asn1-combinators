@@ -267,7 +267,7 @@ let named_tag = function
   | 23 -> Some "UTCTime"
   | _ -> None
 
-let to_grammar ppf grammar =
+let to_grammar name ppf grammar =
   let rec asn : type a. ?choice:bool -> a asn -> unit = fun ?(choice = false) ->
     function
     | Iso (_, _, _, a) -> asn ~choice a
@@ -301,7 +301,9 @@ let to_grammar ppf grammar =
         Format.pp_print_string ppf "  ";
         Format.pp_open_vbox ppf 0;
       end;
-      asn ~choice:true a; Format.pp_print_cut ppf ();
+      asn ~choice:true a;
+      Format.pp_print_string ppf ",";
+      Format.pp_print_cut ppf ();
       asn ~choice:true b;
       if not choice then begin
         Format.pp_close_box ppf ();
@@ -332,7 +334,11 @@ let to_grammar ppf grammar =
       Format.pp_print_string ppf " OPTIONAL"
   and seq : type a. a sequence -> unit = function
     | Last e -> ele e
-    | Pair (e, r) -> ele e; Format.pp_print_cut ppf (); seq r
+    | Pair (e, r) ->
+      ele e;
+      Format.pp_print_string ppf ",";
+      Format.pp_print_cut ppf ();
+      seq r
   and prim : type a. a prim -> unit = function
     | Bool -> Format.pp_print_string ppf "BOOLEAN"
     | Int -> Format.pp_print_string ppf "INTEGER"
@@ -343,5 +349,15 @@ let to_grammar ppf grammar =
     | CharString -> Format.pp_print_string ppf "CHARSTRING"
   in
   Format.pp_open_vbox ppf 0;
+  Format.pp_print_string ppf name;
+  Format.pp_print_string ppf " DEFINITIONS ::=";
+  Format.pp_print_cut ppf ();
+  Format.pp_print_string ppf "BEGIN";
+  Format.pp_print_cut ppf ();
+  Format.pp_print_string ppf name;
+  Format.pp_print_string ppf " ::=";
+  Format.pp_print_cut ppf ();
   asn grammar;
+  Format.pp_print_cut ppf ();
+  Format.pp_print_string ppf "END";
   Format.pp_close_box ppf ()

@@ -401,4 +401,4 @@ val decode : 'a codec -> Cstruct.t -> ('a * Cstruct.t, error) result
 val random : 'a t -> 'a
 (** [random asn] is a random inhabitant of ['a]. *)
 
-val to_grammar : Format.formatter -> 'a t -> unit
+val to_grammar : string -> Format.formatter -> 'a t -> unit
